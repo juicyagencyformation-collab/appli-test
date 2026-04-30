@@ -1443,7 +1443,17 @@ async function createCommune(){
   if(error){ btn.disabled=false; btn.textContent='Créer la commune'; return toast('❌ '+error.message); }
 
 // Création client Stripe à faire manuellement depuis l'onglet Stripe
-
+async function createStripeCustomer(communeId, nom, email){
+  const stripeId = prompt(`ID client Stripe pour "${nom}" :\n(Crée-le sur dashboard.stripe.com puis colle l'ID ici)`, '');
+  if(!stripeId || !stripeId.trim()) return;
+  if(!stripeId.startsWith('cus_')) return toast('❌ ID invalide (doit commencer par cus_)');
+  const {error} = await sb.from('communes').update({stripe_customer_id: stripeId.trim()}).eq('id', communeId);
+  if(error) return toast('❌ '+error.message);
+  C.communes = C.communes.map(c => c.id===communeId ? {...c, stripe_customer_id: stripeId.trim()} : c);
+  addLog('💳', `Stripe lié manuellement : ${nom}`, stripeId.trim());
+  toast('✓ Client Stripe lié !');
+  loadCommunes();
+}
 // ══════════════════════════════════════════════
 //  EXPORT CSV
 // ══════════════════════════════════════════════
