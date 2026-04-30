@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plateforme · Super Admin v6</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg0:#08090c; --bg1:#0f1117; --bg2:#161820; --bg3:#1c1f2a; --bg4:#232633;
+  --line:#ffffff0d; --line2:#ffffff16;
+  --txt:#dde1ec; --txt2:#7c839a; --txt3:#4a5068;
+  --acc:#4fc3a1; --acc2:#39a98a;
+  --warn:#e8a84a; --danger:#e05c5c; --info:#5b9cf6; --purple:#9b7ef8;
+  --stripe:#635bff; --gmail:#ea4335;
+  --sidebar:236px; --r:8px;
+  --glow-acc:0 0 20px rgba(79,195,161,.15);
+  --glow-stripe:0 0 20px rgba(99,91,255,.15);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg0);color:var(--txt);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+
+/* ── AUTH ── */
+#auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 0%,rgba(79,195,161,.06) 0%,transparent 60%);}
+.auth-box{background:var(--bg1);border:1px solid var(--line2);border-radius:16px;padding:40px 36px;width:360px;box-shadow:var(--glow-acc);}
+.auth-logo{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:var(--acc);margin-bottom:28px;}
+.auth-h{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;}
+.auth-sub{font-size:13px;color:var(--txt2);margin-bottom:28px;}
+.auth-err{background:rgba(224,92,92,.08);border:1px solid rgba(224,92,92,.2);border-radius:6px;padding:9px 13px;font-size:12px;color:var(--danger);margin-bottom:16px;display:none;}
+label{display:block;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--txt3);margin-bottom:5px;}
+.field-input{width:100%;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--r);padding:10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s;margin-bottom:14px;}
+.field-input:focus{border-color:var(--acc);}
+.btn-auth{width:100%;background:var(--acc);border:none;border-radius:var(--r);padding:11px;color:#051a14;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:4px;}
+.btn-auth:hover:not(:disabled){background:var(--acc2);box-shadow:var(--glow-acc);}
+.btn-auth:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── LAYOUT ── */
+#app{display:none;min-height:100vh;}
+.sidebar{width:var(--sidebar);background:var(--bg1);border-right:1px solid var(--line);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sb-brand{padding:22px 18px 16px;border-bottom:1px solid var(--line);}
+.sb-tag{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:4px;text-transform:uppercase;color:var(--acc);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.sb-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--acc);animation:pulse-dot 2s ease-in-out infinite;}
+.sb-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--txt);line-height:1.3;}
+.sb-nav{flex:1;padding:10px 8px;overflow-y:auto;}
+.nav-section{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--txt3);padding:14px 10px 5px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:6px;border:none;background:transparent;color:var(--txt2);cursor:pointer;width:100%;text-align:left;font-family:'DM Sans',sans-serif;font-size:13px;transition:all .15s;margin-bottom:1px;position:relative;}
+.nav-item:hover{background:var(--bg3);color:var(--txt);}
+.nav-item.active{background:var(--bg3);color:var(--acc);}
+.nav-item .ni{font-size:14px;flex-shrink:0;width:18px;text-align:center;}
+.nav-chip{margin-left:auto;font-family:'DM Mono',monospace;font-size:8px;padding:2px 7px;border-radius:10px;}
+.chip-danger{background:rgba(224,92,92,.15);color:var(--danger);}
+.chip-acc{background:rgba(79,195,161,.1);color:var(--acc);}
+.chip-stripe{background:rgba(99,91,255,.12);color:var(--stripe);}
+.sb-integrations{padding:12px 14px;border-top:1px solid var(--line);}
+.int-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--txt3);margin-bottom:8px;}
+.int-badges{display:flex;gap:6px;}
+.int-badge{display:flex;align-items:center;gap:5px;padding:5px 9px;border-radius:6px;border:1px solid;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;}
+.int-badge.stripe{color:var(--stripe);border-color:rgba(99,91,255,.3);background:rgba(99,91,255,.06);}
+.int-badge.gmail{color:var(--gmail);border-color:rgba(234,67,53,.3);background:rgba(234,67,53,.06);}
+.int-dot{width:5px;height:5px;border-radius:50%;}
+.sb-user{padding:12px 14px;border-top:1px solid var(--line);}
+.sb-user-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.sb-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--purple));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+.sb-uname{font-size:12px;font-weight:600;color:var(--txt);line-height:1.2;}
+.sb-urole{font-family:'DM Mono',monospace;font-size:8px;color:var(--acc);letter-spacing:1px;}
+.btn-logout{width:100%;background:transparent;border:1px solid var(--line2);border-radius:6px;padding:7px;color:var(--txt3);font-size:12px;cursor:pointer;transition:all .15s;}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger);}
+
+.main{margin-left:var(--sidebar);flex:1;min-height:100vh;}
+.topbar{height:54px;background:var(--bg1);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 24px;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.tb-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;}
+.tb-right{display:flex;align-items:center;gap:8px;}
+.pill{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:4px 10px;border-radius:100px;border:1px solid;}
+.pill-acc{color:var(--acc);border-color:rgba(79,195,161,.3);background:rgba(79,195,161,.06);}
+.pill-warn{color:var(--warn);border-color:rgba(232,169,74,.3);background:rgba(232,169,74,.06);}
+.pill-stripe{color:var(--stripe);border-color:rgba(99,91,255,.3);background:rgba(99,91,255,.06);}
+
+.content{padding:28px;max-width:1280px;}
+.page{display:none;animation:fadeIn .2s ease;}
+.page.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--bg1);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s;}
+.stat-card:hover{border-color:var(--line2);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:.8;}
+.stat-card.s-acc::before{background:linear-gradient(90deg,var(--acc),transparent);}
+.stat-card.s-green::before{background:linear-gradient(90deg,#22c55e,transparent);}
+.stat-card.s-info::before{background:linear-gradient(90deg,var(--info),transparent);}
+.stat-card.s-stripe::before{background:linear-gradient(90deg,var(--stripe),transparent);}
+.stat-card.s-warn::before{background:linear-gradient(90deg,var(--warn),transparent);}
+.stat-card.s-purple::before{background:linear-gradient(90deg,var(--purple),transparent);}
+.stat-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--txt3);margin-bottom:8px;}
+.stat-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;line-height:1;}
+.stat-sub{font-size:11px;color:var(--txt3);margin-top:5px;}
+.s-acc .stat-val{color:var(--acc);}
+.s-green .stat-val{color:#22c55e;}
+.s-info .stat-val{color:var(--info);}
+.s-stripe .stat-val{color:var(--stripe);}
+.s-warn .stat-val{color:var(--warn);}
+.s-purple .stat-val{color:var(--purple);}
+
+/* ── TABLE ── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+.section-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+.section-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.btn{background:var(--bg3);border:1px solid var(--line2);border-radius:6px;padding:7px 14px;color:var(--txt);font-size:12px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;font-weight:500;}
+.btn:hover:not(:disabled){background:var(--bg4);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-acc{background:rgba(79,195,161,.12);border-color:rgba(79,195,161,.3);color:var(--acc);}
+.btn-acc:hover:not(:disabled){background:rgba(79,195,161,.2);}
+.btn-stripe{background:rgba(99,91,255,.1);border-color:rgba(99,91,255,.35);color:var(--stripe);}
+.btn-stripe:hover:not(:disabled){background:rgba(99,91,255,.18);box-shadow:var(--glow-stripe);}
+.btn-gmail{background:rgba(234,67,53,.08);border-color:rgba(234,67,53,.3);color:var(--gmail);}
+.btn-gmail:hover:not(:disabled){background:rgba(234,67,53,.15);}
+.btn-danger{border-color:rgba(224,92,92,.3);color:var(--danger);}
+.btn-danger:hover:not(:disabled){background:rgba(224,92,92,.08);}
+.btn-sm{padding:4px 10px;font-size:11px;}
+.btn-xs{padding:3px 8px;font-size:10px;}
+
+.table-wrap{background:var(--bg1);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:24px;}
+table{width:100%;border-collapse:collapse;}
+th{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--txt3);padding:10px 16px;text-align:left;border-bottom:1px solid var(--line);background:var(--bg2);}
+td{padding:11px 16px;font-size:13px;color:var(--txt2);border-bottom:1px solid var(--line);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--bg2);}
+.td-main{color:var(--txt);font-weight:600;}
+.badge{display:inline-flex;align-items:center;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;padding:3px 8px;border-radius:100px;border:1px solid;}
+.badge-green{color:var(--acc);border-color:rgba(79,195,161,.3);background:rgba(79,195,161,.06);}
+.badge-gray{color:var(--txt3);border-color:var(--line);background:var(--bg3);}
+.badge-warn{color:var(--warn);border-color:rgba(232,169,74,.3);background:rgba(232,169,74,.06);}
+.badge-danger{color:var(--danger);border-color:rgba(224,92,92,.3);background:rgba(224,92,92,.06);}
+.badge-info{color:var(--info);border-color:rgba(91,156,246,.3);background:rgba(91,156,246,.06);}
+.badge-purple{color:var(--purple);border-color:rgba(155,126,248,.3);background:rgba(155,126,248,.06);}
+.badge-stripe{color:var(--stripe);border-color:rgba(99,91,255,.3);background:rgba(99,91,255,.06);}
+.td-actions{display:flex;gap:5px;flex-wrap:wrap;}
+
+/* ── STRIPE SECTION ── */
+.stripe-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.stripe-logo{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--stripe);background:rgba(99,91,255,.1);border:1px solid rgba(99,91,255,.3);border-radius:6px;padding:4px 10px;}
+.invoice-status-paid{color:#22c55e;}
+.invoice-status-open{color:var(--warn);}
+.invoice-status-draft{color:var(--txt3);}
+.invoice-status-void{color:var(--danger);}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;display:none;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--line2);border-radius:14px;padding:28px;width:540px;max-width:95vw;max-height:92vh;overflow-y:auto;}
+.modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;margin-bottom:5px;}
+.modal-sub{font-size:12px;color:var(--txt2);margin-bottom:22px;}
+.modal-divider{border:none;border-top:1px solid var(--line);margin:16px 0;}
+.field{margin-bottom:14px;}
+.field label{margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;background:var(--bg3);border:1px solid var(--line2);border-radius:6px;padding:9px 12px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--acc);}
+.field select option{background:var(--bg3);}
+.field textarea{resize:vertical;min-height:90px;margin-bottom:0;}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.field-note{font-size:11px;color:var(--txt3);margin-top:5px;line-height:1.5;}
+
+/* ── EMAIL TEMPLATE PREVIEW ── */
+.email-preview{background:var(--bg3);border:1px solid var(--line2);border-radius:8px;padding:16px;font-size:12px;color:var(--txt2);line-height:1.7;margin-top:10px;white-space:pre-wrap;font-family:'DM Mono',monospace;max-height:200px;overflow-y:auto;}
+.template-tabs{display:flex;gap:6px;margin-bottom:12px;}
+.t-tab{padding:5px 12px;border-radius:5px;border:1px solid var(--line2);background:transparent;color:var(--txt3);font-size:11px;cursor:pointer;transition:all .15s;font-family:'DM Mono',monospace;}
+.t-tab.active{background:var(--bg4);color:var(--txt);border-color:var(--line2);}
+
+/* ── AI BADGE ── */
+.ai-badge{display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;padding:3px 8px;border-radius:4px;border:1px solid rgba(155,126,248,.3);background:rgba(155,126,248,.06);color:var(--purple);}
+.ai-dot{width:4px;height:4px;border-radius:50%;background:var(--purple);animation:pulse-dot 1.5s ease-in-out infinite;}
+
+/* ── MRR BAR ── */
+.mrr-bar-wrap{display:flex;height:6px;border-radius:3px;overflow:hidden;margin:10px 0 6px;}
+.mrr-seg{height:100%;}
+.mrr-legend{display:flex;gap:14px;flex-wrap:wrap;}
+.mrr-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt2);}
+.mrr-leg-dot{width:7px;height:7px;border-radius:2px;}
+
+/* ── HEALTH BAR ── */
+.health-bar{width:52px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;display:inline-block;}
+.health-fill{height:100%;border-radius:2px;transition:width .6s ease;}
+
+/* ── MINI BAR ── */
+.mini-bar{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:5px;}
+.mini-bar-fill{height:100%;border-radius:2px;background:var(--acc);}
+
+/* ── LOADING / TOAST / EMPTY ── */
+.loading{display:flex;align-items:center;gap:10px;color:var(--txt3);font-size:13px;padding:20px;}
+.spin{width:14px;height:14px;border:2px solid var(--bg4);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:40px;color:var(--txt3);font-size:13px;}
+.empty-ico{font-size:24px;margin-bottom:8px;}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--line2);border-radius:8px;padding:12px 18px;font-size:13px;color:var(--txt);z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;max-width:360px;}
+#toast.show{opacity:1;transform:translateY(0);}
+
+/* ── RENEWAL ALERT ── */
+.renew-alert{background:rgba(232,169,74,.06);border:1px solid rgba(232,169,74,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--warn);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.section-divider{border:none;border-top:1px solid var(--line);margin:24px 0;}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-wrap">
+  <div class="auth-box">
+    <div class="auth-logo">Plateforme Citoyenne</div>
+    <div class="auth-h">Super Admin</div>
+    <div class="auth-sub">Cockpit centralisé · v6</div>
+    <div class="auth-err" id="auth-err"></div>
+    <label>Email</label>
+    <input type="email" id="login-email" class="field-input" placeholder="ton@email.fr" autocomplete="username">
+    <label>Mot de passe</label>
+    <input type="password" id="login-pass" class="field-input" placeholder="••••••••" autocomplete="current-password">
+    <button class="btn-auth" id="btn-login" onclick="doLogin()">Connexion</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-tag">Super Admin Live</div>
+      <div class="sb-title">Plateforme ·<br>Cockpit v6</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="nav-section">Dashboard</div>
+      <button class="nav-item active" onclick="goPage('overview')" id="nav-overview"><span class="ni">◈</span> Vue globale</button>
+      <div class="nav-section">Pipeline</div>
+      <button class="nav-item" onclick="goPage('pipeline')" id="nav-pipeline"><span class="ni">⟶</span> Onboarding <span class="nav-chip chip-danger" id="pipe-badge" style="display:none">0</span></button>
+      <div class="nav-section">Gestion</div>
+      <button class="nav-item" onclick="goPage('communes')" id="nav-communes"><span class="ni">⬡</span> Communes</button>
+      <button class="nav-item" onclick="goPage('users')" id="nav-users"><span class="ni">◎</span> Utilisateurs</button>
+      <div class="nav-section">Business</div>
+      <button class="nav-item" onclick="goPage('billing')" id="nav-billing"><span class="ni">◇</span> Billing & MRR</button>
+      <button class="nav-item" onclick="goPage('stripe')" id="nav-stripe"><span class="ni" style="color:var(--stripe);">⬡</span> Stripe <span class="nav-chip chip-stripe">Live</span></button>
+      <button class="nav-item" onclick="goPage('emails')" id="nav-emails"><span class="ni" style="color:var(--gmail);">✉</span> Emails & drafts</button>
+    </nav>
+    <div class="sb-integrations">
+      <div class="int-label">Intégrations</div>
+      <div class="int-badges">
+        <div class="int-badge stripe"><div class="int-dot" style="background:var(--stripe);"></div>Stripe</div>
+        <div class="int-badge gmail"><div class="int-dot" style="background:var(--gmail);"></div>Gmail</div>
+      </div>
+    </div>
+    <div class="sb-user">
+      <div class="sb-user-row">
+        <div class="sb-av" id="sb-av">SA</div>
+        <div><div class="sb-uname" id="sb-uname">—</div><div class="sb-urole">SUPER ADMIN</div></div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="tb-title" id="tb-title">Vue globale</div>
+      <div class="tb-right">
+        <span class="pill pill-acc" id="tb-communes">—</span>
+        <span class="pill pill-stripe" id="tb-arr" style="display:none">—</span>
+        <span class="pill pill-warn" id="tb-date"></span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ═══ OVERVIEW ═══ -->
+      <div class="page active" id="page-overview">
+        <div class="stats-grid" id="ov-stats">
+          <div class="stat-card"><div class="loading"><div class="spin"></div></div></div>
+          <div class="stat-card"></div><div class="stat-card"></div><div class="stat-card"></div>
+        </div>
+        <div id="ov-alerts"></div>
+        <div class="section-header">
+          <div class="section-title">Toutes les communes</div>
+          <div class="section-actions">
+            <button class="btn btn-sm" onclick="exportCSV()">↓ CSV</button>
+            <button class="btn btn-acc btn-sm" onclick="openModalCommune()">+ Commune</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Commune</th><th>Plan</th><th>Santé</th><th>Membres</th>
+              <th>Stripe</th><th>Renouvellement</th><th>Statut</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="ov-table"><tr><td colspan="8"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══ PIPELINE ═══ -->
+      <div class="page" id="page-pipeline">
+        <div class="section-header">
+          <div class="section-title">Pipeline onboarding</div>
+          <button class="btn btn-acc btn-sm" onclick="openModalCommune()">+ Nouvelle commune</button>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:28px;overflow-x:auto;padding-bottom:4px;" id="pipe-kanban"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Commune</th><th>Pipeline</th><th>Plan</th><th>Owner</th><th>Renouvellement</th><th>Stripe</th><th>Actions</th></tr></thead>
+            <tbody id="pipe-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══ COMMUNES ═══ -->
+      <div class="page" id="page-communes">
+        <div class="section-header">
+          <div class="section-title">Communes</div>
+          <div class="section-actions">
+            <input id="commune-search" class="field-input" placeholder="Filtrer…" oninput="filterCommunes()" style="width:150px;margin-bottom:0;padding:6px 10px;font-size:12px;">
+            <button class="btn btn-acc btn-sm" onclick="openModalCommune()">+ Nouvelle</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;" id="communes-grid"></div>
+      </div>
+
+      <!-- ═══ USERS ═══ -->
+      <div class="page" id="page-users">
+        <div class="section-header">
+          <div class="section-title">Utilisateurs</div>
+          <div class="section-actions">
+            <select id="uf-commune" onchange="loadUsers()" class="field-input" style="width:160px;margin-bottom:0;padding:6px 10px;font-size:12px;"><option value="">Toutes les communes</option></select>
+            <select id="uf-role" onchange="loadUsers()" class="field-input" style="width:130px;margin-bottom:0;padding:6px 10px;font-size:12px;">
+              <option value="">Tous les rôles</option>
+              <option value="super_admin">super_admin</option>
+              <option value="admin">admin</option>
+              <option value="user">user</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Utilisateur</th><th>Commune</th><th>Rôle</th><th>XP</th><th>Inscrit le</th><th>Actions</th></tr></thead>
+            <tbody id="users-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══ BILLING ═══ -->
+      <div class="page" id="page-billing">
+        <div class="stats-grid" id="billing-stats">
+          <div class="stat-card"><div class="loading"><div class="spin"></div></div></div>
+          <div class="stat-card"></div><div class="stat-card"></div><div class="stat-card"></div>
+        </div>
+        <div id="mrr-breakdown" style="margin-bottom:24px;"></div>
+        <div class="section-header">
+          <div class="section-title">Abonnements communes</div>
+          <button class="btn btn-sm" onclick="exportCSV()">↓ CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Commune</th><th>Plan</th><th>Revenu/an</th><th>Début abo</th><th>Renouvellement</th><th>Jours restants</th><th>Stripe client</th><th>Modifier</th></tr></thead>
+            <tbody id="billing-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══ STRIPE ═══ -->
+      <div class="page" id="page-stripe">
+        <div class="stripe-header">
+          <div class="stripe-logo">stripe</div>
+          <span style="font-size:12px;color:var(--txt3);">Environnement de test · Juicy Solutions</span>
+          <span class="ai-badge"><span class="ai-dot"></span>Données live</span>
+        </div>
+        <div class="stats-grid" id="stripe-stats">
+          <div class="stat-card"><div class="loading"><div class="spin"></div></div></div>
+          <div class="stat-card"></div><div class="stat-card"></div><div class="stat-card"></div>
+        </div>
+        <div class="section-header" style="margin-top:8px;">
+          <div class="section-title">Factures Stripe</div>
+          <div class="section-actions">
+            <button class="btn btn-stripe btn-sm" onclick="openCreateInvoiceModal()">+ Créer facture</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Client</th><th>Montant</th><th>Statut</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody id="stripe-invoices"><tr><td colspan="5"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
+          </table>
+        </div>
+        <div class="section-header">
+          <div class="section-title">Clients Stripe</div>
+          <button class="btn btn-stripe btn-sm" onclick="openCreateCustomerModal()">+ Créer client</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nom</th><th>Email</th><th>Commune liée</th><th>Actions</th></tr></thead>
+            <tbody id="stripe-customers"><tr><td colspan="4"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══ EMAILS ═══ -->
+      <div class="page" id="page-emails">
+        <div class="section-header">
+          <div class="section-title">Envoyer un email</div>
+          <span class="ai-badge"><span class="ai-dot"></span>Gmail connecté</span>
+        </div>
+        <!-- Composer -->
+        <div style="background:var(--bg1);border:1px solid var(--line);border-radius:var(--r);padding:24px;margin-bottom:24px;">
+          <div style="margin-bottom:16px;">
+            <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:12px;">Templates rapides</div>
+            <div class="template-tabs" id="template-tabs">
+              <button class="t-tab active" onclick="setTemplate('bienvenue',this)">Bienvenue</button>
+              <button class="t-tab" onclick="setTemplate('facture',this)">Facture</button>
+              <button class="t-tab" onclick="setTemplate('relance',this)">Relance renouvellement</button>
+              <button class="t-tab" onclick="setTemplate('onboarding',this)">Onboarding admin</button>
+              <button class="t-tab" onclick="setTemplate('custom',this)">Libre</button>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Destinataire</label>
+              <select id="email-commune-sel" onchange="prefillEmailRecipient()" class="field-input" style="margin-bottom:0;">
+                <option value="">— Choisir une commune —</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Email direct</label>
+              <input type="email" id="email-to" class="field-input" placeholder="mairie@commune.fr" style="margin-bottom:0;">
+            </div>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label>Objet</label>
+            <input type="text" id="email-subject" class="field-input" placeholder="Objet de l'email" style="margin-bottom:0;">
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label>Corps du message</label>
+            <textarea id="email-body" class="field-input" style="margin-bottom:0;min-height:160px;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;" placeholder="Votre message…"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
+            <button class="btn btn-gmail" id="btn-send-draft" onclick="createEmailDraft()">✉ Créer le brouillon Gmail</button>
+            <span style="font-size:11px;color:var(--txt3);">→ Le brouillon s'ouvre dans Gmail pour envoi final</span>
+          </div>
+        </div>
+
+        <!-- Drafts récents -->
+        <div class="section-header">
+          <div class="section-title">Brouillons récents</div>
+          <button class="btn btn-sm" onclick="loadDrafts()">↻ Actualiser</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Objet</th><th>Destinataire</th><th>Date</th><th>Ouvrir</th></tr></thead>
+            <tbody id="drafts-table"><tr><td colspan="4"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<!-- ── MODAL COMMUNE ── -->
+<div class="modal-bg" id="modal-commune">
+  <div class="modal">
+    <div class="modal-title">Nouvelle commune</div>
+    <div class="modal-sub">Instance isolée · admin + Stripe client créés automatiquement</div>
+    <div class="field-row">
+      <div class="field"><label>Nom complet</label><input type="text" id="m-nom" class="field-input" placeholder="Flixecourt" style="margin-bottom:0;"></div>
+      <div class="field"><label>Slug</label><input type="text" id="m-slug" class="field-input" placeholder="flixecourt" style="margin-bottom:0;"></div>
+    </div>
+    <div class="field-row" style="margin-top:12px;">
+      <div class="field"><label>Département</label><input type="text" id="m-dept" class="field-input" placeholder="80" style="margin-bottom:0;"></div>
+      <div class="field"><label>Email propriétaire</label><input type="email" id="m-email" class="field-input" placeholder="mairie@commune.fr" style="margin-bottom:0;"></div>
+    </div>
+    <div class="field-row" style="margin-top:12px;">
+      <div class="field"><label>Plan</label>
+        <select id="m-plan" class="field-input" style="margin-bottom:0;">
+          <option value="hameau">Hameau — 590€/an</option>
+          <option value="village">Village — 990€/an</option>
+          <option value="bourg">Bourg — 1790€/an</option>
+          <option value="ville">Ville — devis</option>
+        </select>
+      </div>
+      <div class="field"><label>Pipeline</label>
+        <select id="m-pipeline" class="field-input" style="margin-bottom:0;">
+          <option value="prospect">Prospect</option>
+          <option value="demo">Démo</option>
+          <option value="signe">Signé</option>
+          <option value="actif">Actif</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row" style="margin-top:12px;">
+      <div class="field"><label>Début abonnement</label><input type="date" id="m-start" class="field-input" style="margin-bottom:0;"></div>
+      <div class="field"><label>Couleur thème</label><input type="text" id="m-color" class="field-input" value="#2C5F6E" style="margin-bottom:0;"></div>
+    </div>
+    <div class="field" style="margin-top:12px;"><label>Notes internes</label><textarea id="m-notes" class="field-input" placeholder="Contacts, remarques…" style="margin-bottom:0;min-height:64px;"></textarea></div>
+    <div style="margin-top:14px;padding:10px 12px;background:rgba(79,195,161,.04);border:1px solid rgba(79,195,161,.15);border-radius:6px;font-size:11px;color:var(--txt2);">
+      💡 Après création, tu pourras lier un <strong style="color:var(--stripe);">client Stripe</strong> manuellement depuis la card de la commune.
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-acc" id="btn-create-commune" onclick="createCommune()">Créer la commune</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL EDIT COMMUNE ── -->
+<div class="modal-bg" id="modal-edit-commune">
+  <div class="modal">
+    <div class="modal-title">Modifier la commune</div>
+    <div class="modal-sub" id="edit-commune-sub">—</div>
+    <input type="hidden" id="edit-commune-id">
+    <div class="field-row">
+      <div class="field"><label>Plan</label>
+        <select id="edit-plan" class="field-input" style="margin-bottom:0;">
+          <option value="hameau">Hameau — 590€/an</option>
+          <option value="village">Village — 990€/an</option>
+          <option value="bourg">Bourg — 1790€/an</option>
+          <option value="ville">Ville — devis</option>
+          <option value="free">Free</option>
+        </select>
+      </div>
+      <div class="field"><label>Pipeline</label>
+        <select id="edit-pipeline" class="field-input" style="margin-bottom:0;">
+          <option value="prospect">Prospect</option><option value="demo">Démo</option>
+          <option value="signe">Signé</option><option value="actif">Actif</option><option value="churned">Churné</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row" style="margin-top:12px;">
+      <div class="field"><label>Statut</label>
+        <select id="edit-actif" class="field-input" style="margin-bottom:0;"><option value="true">Actif</option><option value="false">Suspendu</option></select>
+      </div>
+      <div class="field"><label>Email propriétaire</label><input type="email" id="edit-email" class="field-input" style="margin-bottom:0;"></div>
+    </div>
+    <div class="field-row" style="margin-top:12px;">
+      <div class="field"><label>Début abo</label><input type="date" id="edit-start" class="field-input" style="margin-bottom:0;"></div>
+      <div class="field"><label>Stripe customer ID</label><input type="text" id="edit-stripe-id" class="field-input" placeholder="cus_…" style="margin-bottom:0;"></div>
+    </div>
+    <div class="field" style="margin-top:12px;"><label>Notes</label><textarea id="edit-notes" class="field-input" style="margin-bottom:0;min-height:64px;"></textarea></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-acc" id="btn-save-commune" onclick="saveCommune()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL CRÉER FACTURE STRIPE ── -->
+<div class="modal-bg" id="modal-create-invoice">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--stripe);">💳 Créer une facture Stripe</div>
+    <div class="modal-sub">La facture sera envoyée automatiquement par Stripe à l'email du client.</div>
+    <div class="field"><label>Client Stripe</label>
+      <select id="inv-customer" class="field-input" style="margin-bottom:0;"></select>
+    </div>
+    <div class="field-row" style="margin-top:12px;">
+      <div class="field"><label>Montant (€)</label><input type="number" id="inv-amount" class="field-input" placeholder="590" min="1" style="margin-bottom:0;"></div>
+      <div class="field"><label>Délai de paiement (jours)</label><input type="number" id="inv-days" class="field-input" value="30" min="0" style="margin-bottom:0;"></div>
+    </div>
+    <div class="field" style="margin-top:12px;"><label>Description</label><input type="text" id="inv-desc" class="field-input" placeholder="Abonnement Plateforme Citoyenne — Village 2025" style="margin-bottom:0;"></div>
+    <div class="field-note" style="margin-top:10px;">📧 Stripe enverra automatiquement la facture par email au client après finalisation.</div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-stripe" id="btn-create-invoice" onclick="createStripeInvoice()">Créer & envoyer la facture</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL CRÉER CLIENT STRIPE ── -->
+<div class="modal-bg" id="modal-create-customer">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--stripe);">Nouveau client Stripe</div>
+    <div class="modal-sub">Créé dans ton compte Stripe et lié à la commune.</div>
+    <div class="field"><label>Nom</label><input type="text" id="cust-name" class="field-input" placeholder="Mairie de Flixecourt" style="margin-bottom:0;"></div>
+    <div class="field" style="margin-top:12px;"><label>Email</label><input type="email" id="cust-email" class="field-input" placeholder="mairie@flixecourt.fr" style="margin-bottom:0;"></div>
+    <div class="field" style="margin-top:12px;"><label>Commune Supabase à lier</label>
+      <select id="cust-commune" class="field-input" style="margin-bottom:0;"><option value="">— Optionnel —</option></select>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-stripe" id="btn-create-customer" onclick="createStripeCustomer()">Créer le client</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL LIER STRIPE ── -->
+<div class="modal-bg" id="modal-link-stripe">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--stripe);">💳 Lier un client Stripe</div>
+    <div class="modal-sub" id="link-stripe-sub">Commune · —</div>
+    <input type="hidden" id="link-stripe-commune-id">
+    <div style="padding:12px 14px;background:rgba(99,91,255,.06);border:1px solid rgba(99,91,255,.2);border-radius:8px;font-size:12px;color:var(--txt2);margin-bottom:18px;line-height:1.7;">
+      1. Va sur <a href="https://dashboard.stripe.com/customers" target="_blank" style="color:var(--stripe);">dashboard.stripe.com/customers</a><br>
+      2. Crée le client ou trouve-le existant<br>
+      3. Copie son ID <span style="font-family:'DM Mono',monospace;color:var(--stripe);">cus_xxxxxxxxxxxxx</span><br>
+      4. Colle-le ci-dessous
+    </div>
+    <div class="field">
+      <label>ID Client Stripe</label>
+      <input type="text" id="link-stripe-id" class="field-input" placeholder="cus_xxxxxxxxxxxxx" style="margin-bottom:0;font-family:'DM Mono',monospace;">
+    </div>
+    <div class="field-note" style="margin-top:6px;">L'ID doit commencer par <code style="color:var(--stripe);">cus_</code></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-stripe" id="btn-link-stripe" onclick="saveLinkStripe()">Lier ce client</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════
+const GITHUB  = 'juicyagencyformation-collab';
+const SB_URL  = 'https://jofeldziwqdswfhqqrcv.supabase.co';
+const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvZmVsZHppd3Fkc3dmaHFxcmN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NTQ0NzMsImV4cCI6MjA4OTMzMDQ3M30.PqkaS0TdQ_4wiZSX2lJuaPHr1zFyd9jovt9Ucd8IhQc';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+const PLAN_PRICE = { hameau:590, village:990, bourg:1790, ville:0, free:0 };
+const PLAN_LABEL = { hameau:'Hameau', village:'Village', bourg:'Bourg', ville:'Ville', free:'Free' };
+const PLAN_COLORS = { hameau:'badge-gray', village:'badge-green', bourg:'badge-purple', ville:'badge-info', free:'badge-gray' };
+
+let CU=null, CP=null;
+
+// ══════════════════════════════════════════════
+//  CACHE
+// ══════════════════════════════════════════════
+const C = {
+  communes:[], profiles:[], profilesByCommune:{},
+  sigByC:{}, annByC:{}, actByC:{},
+  stripeCustomers:[], stripeInvoices:[],
+  lastFetch:null, lastStripeFetch:null,
+  log: JSON.parse(localStorage.getItem('sa_log')||'[]'),
+};
+
+async function fetchBaseData(force=false) {
+  if(!force && C.lastFetch && Date.now()-C.lastFetch<30000) return;
+  const [comRes, profRes] = await Promise.all([
+    sb.from('communes').select('*').order('created_at',{ascending:true}),
+    sb.from('profiles').select('id,commune_id,nom,pseudo,role,xp,created_at').order('created_at',{ascending:false}),
+  ]);
+  C.communes  = comRes.data  || [];
+  C.profiles  = profRes.data || [];
+  C.profilesByCommune = {};
+  C.profiles.forEach(p=>{ C.profilesByCommune[p.commune_id]=(C.profilesByCommune[p.commune_id]||0)+1; });
+  C.lastFetch = Date.now();
+}
+
+async function fetchContentData() {
+  const [s,a,ac] = await Promise.all([
+    sb.from('signalements').select('id,commune_id'),
+    sb.from('annonces').select('id,commune_id'),
+    sb.from('actus').select('id,commune_id'),
+  ]);
+  C.sigByC={}; C.annByC={}; C.actByC={};
+  (s.data||[]).forEach(r=>{ C.sigByC[r.commune_id]=(C.sigByC[r.commune_id]||0)+1; });
+  (a.data||[]).forEach(r=>{ C.annByC[r.commune_id]=(C.annByC[r.commune_id]||0)+1; });
+  (ac.data||[]).forEach(r=>{ C.actByC[r.commune_id]=(C.actByC[r.commune_id]||0)+1; });
+}
+
+// ══════════════════════════════════════════════
+//  STRIPE via Anthropic API (MCP)
+// ══════════════════════════════════════════════
+async function callClaudeWithMCP(prompt, mcpServers=[]) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: 'Tu es un assistant qui exécute des actions via des outils MCP. Réponds UNIQUEMENT en JSON valide, sans markdown ni backticks. Ne mets rien avant ni après le JSON.',
+      mcp_servers: mcpServers,
+      messages: [{ role:'user', content: prompt }],
+    })
+  });
+  const data = await res.json();
+  // Chercher le résultat dans les blocs
+  const textBlocks = (data.content||[]).filter(b=>b.type==='text');
+  const toolResults = (data.content||[]).filter(b=>b.type==='mcp_tool_result');
+  // Essayer d'abord les tool results
+  for(const tr of toolResults) {
+    const raw = tr.content?.[0]?.text || '';
+    try { return JSON.parse(raw); } catch(e) {}
+  }
+  // Puis les blocs texte
+  for(const tb of textBlocks) {
+    const clean = tb.text.replace(/```json|```/g,'').trim();
+    try { return JSON.parse(clean); } catch(e) {}
+  }
+  return null;
+}
+
+async function fetchStripeData(force=false) {
+  if(!force && C.lastStripeFetch && Date.now()-C.lastStripeFetch<60000) return;
+
+  // Récupérer clients et factures via Claude+MCP Stripe
+  const [custData, invData] = await Promise.all([
+    callClaudeWithMCP(
+      'Liste tous les clients Stripe. Retourne un JSON: {"customers":[{"id":"...","name":"...","email":"..."}]}',
+      [{ type:'url', url:'https://mcp.stripe.com', name:'stripe' }]
+    ),
+    callClaudeWithMCP(
+      'Liste les 20 dernières factures Stripe. Retourne un JSON: {"invoices":[{"id":"...","customer":"...","customer_name":"...","customer_email":"...","amount_due":0,"amount_paid":0,"status":"...","created":0}]}',
+      [{ type:'url', url:'https://mcp.stripe.com', name:'stripe' }]
+    )
+  ]);
+
+  C.stripeCustomers = custData?.customers || [];
+  C.stripeInvoices  = invData?.invoices   || [];
+  C.lastStripeFetch = Date.now();
+}
+
+// ══════════════════════════════════════════════
+//  HELPERS MÉTIER
+// ══════════════════════════════════════════════
+function healthScore(c) {
+  if(!c.actif) return 0;
+  const m = Math.min(40,(C.profilesByCommune[c.id]||0)*4);
+  const ct = Math.min(40,((C.sigByC[c.id]||0)+(C.annByC[c.id]||0)+(C.actByC[c.id]||0))*3);
+  const p = c.pipeline_status==='actif'?20:c.pipeline_status==='signe'?10:0;
+  return Math.round(m+ct+p);
+}
+function healthColor(s){ return s>=70?'var(--acc)':s>=40?'var(--warn)':'var(--danger)'; }
+function healthLabel(s){ return s>=70?'Sain':s>=40?'Moyen':s>0?'Risque':'Inactif'; }
+
+function renewalDate(c){ if(!c.date_debut_abo) return null; const d=new Date(c.date_debut_abo); d.setFullYear(d.getFullYear()+1); return d; }
+function daysUntilRenewal(c){ const r=renewalDate(c); return r?Math.round((r-Date.now())/86400000):null; }
+function renewalBadge(d){
+  if(d===null) return '<span style="color:var(--txt3);font-size:11px;">—</span>';
+  if(d<0)  return `<span class="badge badge-danger">Expiré</span>`;
+  if(d<30) return `<span class="badge badge-warn">${d}j</span>`;
+  if(d<60) return `<span class="badge badge-info">${d}j</span>`;
+  return `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--txt3);">${d}j</span>`;
+}
+
+function calcMRR(){
+  const arr = C.communes.filter(c=>c.actif&&c.pipeline_status==='actif').reduce((s,c)=>s+(PLAN_PRICE[c.plan]||0),0);
+  return { arr, mrr:Math.round(arr/12) };
+}
+
+function stripeCustomerForCommune(c){
+  if(c.stripe_customer_id) return C.stripeCustomers.find(s=>s.id===c.stripe_customer_id);
+  return C.stripeCustomers.find(s=>s.email&&s.email===c.owner_email);
+}
+
+function addLog(icon,action,detail=''){
+  C.log.unshift({icon,action,detail,at:new Date().toISOString()});
+  if(C.log.length>200) C.log.pop();
+  localStorage.setItem('sa_log',JSON.stringify(C.log));
+}
+
+// ══════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const err=document.getElementById('auth-err');
+  const btn=document.getElementById('btn-login');
+  err.style.display='none'; btn.disabled=true; btn.textContent='Connexion…';
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  btn.disabled=false; btn.textContent='Connexion';
+  if(error){ err.textContent=error.message; err.style.display='block'; return; }
+  await initApp(data.session);
+}
+async function doLogout(){
+  if(window._rtCh){ await sb.removeChannel(window._rtCh); window._rtCh=null; }
+  await sb.auth.signOut();
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth-wrap').style.display='flex';
+}
+document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+async function initApp(session){
+  CU=session?.user; if(!CU) return;
+  const {data,error}=await sb.from('profiles').select('*').eq('id',CU.id).single();
+  if(error||!data||data.role!=='super_admin'){
+    await sb.auth.signOut();
+    const e=document.getElementById('auth-err');
+    e.textContent='⛔ Accès super-admin uniquement.'; e.style.display='block'; return;
+  }
+  CP=data;
+  document.getElementById('auth-wrap').style.display='none';
+  document.getElementById('app').style.display='flex';
+  const ini=(CP.nom||CP.pseudo||'SA').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('sb-av').textContent=ini;
+  document.getElementById('sb-uname').textContent=CP.nom||CP.pseudo||CU.email;
+  document.getElementById('tb-date').textContent=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+  await loadOverview();
+  initRealtime();
+}
+
+function initRealtime(){
+  if(window._rtCh) return;
+  window._rtCh=sb.channel('sa-v6')
+    .on('postgres_changes',{event:'*',schema:'public',table:'communes'},()=>{ C.lastFetch=null; toast('🔄 Communes mises à jour'); refreshCurrentPage(); })
+    .on('postgres_changes',{event:'*',schema:'public',table:'profiles'},()=>{ C.lastFetch=null; refreshCurrentPage(); })
+    .subscribe();
+}
+function refreshCurrentPage(){
+  const id=document.querySelector('.page.active')?.id?.replace('page-','');
+  if(id) goPage(id);
+}
+
+// ══════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════
+const TITLES={overview:'Vue globale',pipeline:'Pipeline onboarding',communes:'Communes',users:'Utilisateurs',billing:'Billing & MRR',stripe:'Stripe',emails:'Emails & drafts'};
+function goPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  document.getElementById('tb-title').textContent=TITLES[id]||id;
+  if(id==='overview') loadOverview();
+  if(id==='pipeline') loadPipeline();
+  if(id==='communes') loadCommunes();
+  if(id==='users')    loadUsers();
+  if(id==='billing')  loadBilling();
+  if(id==='stripe')   loadStripePage();
+  if(id==='emails')   loadEmailsPage();
+}
+
+// ══════════════════════════════════════════════
+//  OVERVIEW
+// ══════════════════════════════════════════════
+async function loadOverview(){
+  await fetchBaseData();
+  await fetchContentData();
+  const { arr, mrr } = calcMRR();
+  const communes = C.communes;
+
+  document.getElementById('tb-communes').textContent = communes.length+' commune'+(communes.length>1?'s':'');
+  const arrEl = document.getElementById('tb-arr');
+  if(arr>0){ arrEl.textContent=formatEur(mrr)+'/m'; arrEl.style.display='inline-flex'; }
+
+  const expiring = communes.filter(c=>{ const d=daysUntilRenewal(c); return d!==null&&d<30&&c.actif; });
+  document.getElementById('ov-alerts').innerHTML = expiring.map(c=>`
+    <div class="renew-alert">
+      <span>⚠ <strong>${esc(c.nom)}</strong> — renouvellement dans ${daysUntilRenewal(c)<0?'EXPIRÉ':daysUntilRenewal(c)+'j'} · ${esc(c.owner_email||'—')}</span>
+      <button class="btn btn-gmail btn-xs" onclick="prefillRenewalEmail('${esc(c.nom)}','${esc(c.owner_email||'')}',${daysUntilRenewal(c)})">✉ Relancer</button>
+    </div>
+  `).join('');
+
+  document.getElementById('ov-stats').innerHTML = `
+    <div class="stat-card s-acc"><div class="stat-label">Communes actives</div><div class="stat-val">${communes.filter(c=>c.actif).length}</div><div class="stat-sub">${communes.length} total · ${communes.filter(c=>healthScore(c)<40&&c.actif).length} à risque</div></div>
+    <div class="stat-card s-info"><div class="stat-label">Citoyens</div><div class="stat-val">${C.profiles.length}</div><div class="stat-sub">toutes communes</div></div>
+    <div class="stat-card s-green"><div class="stat-label">ARR</div><div class="stat-val">${formatEur(arr)}</div><div class="stat-sub">${formatEur(mrr)}/mois</div></div>
+    <div class="stat-card s-stripe"><div class="stat-label">MRR Stripe</div><div class="stat-val">${formatEur(mrr)}</div><div class="stat-sub">Factures: ${C.stripeInvoices.filter(i=>i.status==='paid').length} payées</div></div>
+  `;
+
+  const maxU=Math.max(1,...communes.map(c=>C.profilesByCommune[c.id]||0));
+  document.getElementById('ov-table').innerHTML = communes.map(c=>{
+    const score=healthScore(c);
+    const days=daysUntilRenewal(c);
+    const sc=stripeCustomerForCommune(c);
+    return `<tr>
+      <td>
+        <div class="td-main">${esc(c.nom)}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--txt3);">${esc(c.slug)}</div>
+        <div class="mini-bar"><div class="mini-bar-fill" style="width:${Math.round(((C.profilesByCommune[c.id]||0)/maxU)*100)}%"></div></div>
+      </td>
+      <td>${planBadge(c.plan)}</td>
+      <td><div style="display:flex;align-items:center;gap:6px;">
+        <div class="health-bar"><div class="health-fill" style="width:${score}%;background:${healthColor(score)};"></div></div>
+        <span style="font-family:'DM Mono',monospace;font-size:9px;color:${healthColor(score)};">${healthLabel(score)}</span>
+      </div></td>
+      <td class="td-main">${C.profilesByCommune[c.id]||0}</td>
+      <td>${sc?`<span class="badge badge-stripe" title="${esc(sc.id)}">✓ ${esc(sc.name||sc.email||'lié')}</span>`:'<span style="font-size:10px;color:var(--txt3);">—</span>'}</td>
+      <td>${renewalBadge(days)}</td>
+      <td>${c.actif?'<span class="badge badge-green">Actif</span>':'<span class="badge badge-danger">Suspendu</span>'}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-xs btn-stripe" onclick="openCreateInvoiceForCommune(${c.id})" title="Créer facture Stripe">💳</button>
+        <button class="btn btn-xs btn-gmail" onclick="openEmailForCommune(${c.id})" title="Envoyer email">✉</button>
+        <button class="btn btn-xs" onclick="openEditCommune(${c.id})">✏</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+
+  const pb=document.getElementById('pipe-badge');
+  const pn=communes.filter(c=>!['actif','churned'].includes(c.pipeline_status||'prospect')).length;
+  if(pn){ pb.textContent=pn; pb.style.display='inline-block'; } else pb.style.display='none';
+}
+
+// ══════════════════════════════════════════════
+//  PIPELINE
+// ══════════════════════════════════════════════
+const STAGES=[
+  {key:'prospect',label:'Prospect',color:'var(--txt3)'},
+  {key:'demo',label:'Démo',color:'var(--info)'},
+  {key:'signe',label:'Signé',color:'var(--warn)'},
+  {key:'actif',label:'Actif',color:'var(--acc)'},
+  {key:'churned',label:'Churné',color:'var(--danger)'},
+];
+async function loadPipeline(){
+  await fetchBaseData();
+  document.getElementById('pipe-kanban').innerHTML = STAGES.map(s=>{
+    const items=C.communes.filter(c=>(c.pipeline_status||'prospect')===s.key);
+    return `<div style="background:var(--bg1);border:1px solid var(--line);border-top:2px solid ${s.color};border-radius:var(--r);padding:14px;min-width:170px;flex-shrink:0;">
+      <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:${s.color};margin-bottom:10px;display:flex;justify-content:space-between;">
+        ${s.label}<span style="background:${s.color}18;padding:1px 6px;border-radius:8px;">${items.length}</span>
+      </div>
+      ${items.map(c=>`<div style="background:var(--bg2);border-radius:5px;padding:8px 10px;margin-bottom:6px;border-left:2px solid ${s.color};">
+        <div style="font-size:12px;font-weight:600;color:var(--txt);">${esc(c.nom)}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--txt3);margin-top:2px;">${planBadge(c.plan)}</div>
+      </div>`).join('')||`<div style="font-size:11px;color:var(--txt3);padding:6px 0;">Aucune</div>`}
+    </div>`;
+  }).join('');
+
+  document.getElementById('pipe-table').innerHTML = C.communes.map(c=>{
+    const s=STAGES.find(x=>x.key===(c.pipeline_status||'prospect'))||STAGES[0];
+    const sc=stripeCustomerForCommune(c);
+    return `<tr>
+      <td><div class="td-main">${esc(c.nom)}</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--txt3);">/${esc(c.slug)}</div></td>
+      <td><span class="badge" style="color:${s.color};border-color:${s.color}40;background:${s.color}10;">${s.label}</span></td>
+      <td>${planBadge(c.plan)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;">${esc(c.owner_email||'—')}</td>
+      <td>${renewalBadge(daysUntilRenewal(c))}</td>
+      <td>${sc?`<span class="badge badge-stripe">✓</span>`:'<span style="font-size:10px;color:var(--txt3);">—</span>'}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-xs" onclick="openEditCommune(${c.id})">Modifier</button>
+        <button class="btn btn-xs btn-stripe" onclick="openCreateInvoiceForCommune(${c.id})">💳 Facture</button>
+        <button class="btn btn-xs btn-gmail" onclick="openEmailForCommune(${c.id})">✉ Email</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  COMMUNES (cards)
+// ══════════════════════════════════════════════
+async function loadCommunes(){
+  await fetchBaseData();
+  await fetchContentData();
+  renderCommuneCards(C.communes);
+}
+function filterCommunes(){
+  const q=document.getElementById('commune-search').value.toLowerCase();
+  renderCommuneCards(C.communes.filter(c=>c.nom.toLowerCase().includes(q)||c.slug.toLowerCase().includes(q)));
+}
+function renderCommuneCards(communes){
+  if(!communes.length){ document.getElementById('communes-grid').innerHTML=`<div class="empty"><div class="empty-ico">⬡</div>Aucune commune</div>`; return; }
+  document.getElementById('communes-grid').innerHTML=communes.map(c=>{
+    const score=healthScore(c);
+    const sc=stripeCustomerForCommune(c);
+    return `<div style="background:var(--bg1);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--line2)'" onmouseout="this.style.borderColor='var(--line)'">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">${esc(c.nom)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--txt3);">/${esc(c.slug)} · ${esc(c.departement||'—')}</div>
+        </div>
+        <div style="width:8px;height:8px;border-radius:50%;background:${c.actif?'var(--acc)':'var(--txt3)'}"></div>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center;margin-bottom:10px;">
+        ${planBadge(c.plan)}
+        ${sc?`<span class="badge badge-stripe" style="font-size:8px;">💳</span>`:''}
+        <div class="health-bar"><div class="health-fill" style="width:${score}%;background:${healthColor(score)};"></div></div>
+        <span style="font-family:'DM Mono',monospace;font-size:9px;color:${healthColor(score)};">${score}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;">
+        <div style="background:var(--bg2);border-radius:6px;padding:8px 10px;">
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;">${C.profilesByCommune[c.id]||0}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--txt3);">Membres</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:6px;padding:8px 10px;">
+          <div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--acc);">${PLAN_PRICE[c.plan]?formatEur(PLAN_PRICE[c.plan])+'/an':'—'}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--txt3);">Revenu</div>
+        </div>
+      </div>
+      ${c.notes?`<div style="font-size:11px;color:var(--txt3);border-top:1px solid var(--line);padding-top:8px;margin-top:8px;font-style:italic;line-height:1.5;">${esc(c.notes)}</div>`:''}
+      <div style="display:flex;gap:5px;margin-top:12px;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="openEditCommune(${c.id})">Modifier</button>
+        ${c.stripe_customer_id
+          ? `<button class="btn btn-sm btn-stripe" onclick="openCreateInvoiceForCommune(${c.id})" title="Créer une facture">💳 Facture</button>`
+          : `<button class="btn btn-sm btn-stripe" onclick="openLinkStripeModal(${c.id},'${esc(c.nom)}')" title="Lier un client Stripe">💳 Lier Stripe</button>`
+        }
+        <button class="btn btn-sm btn-gmail" onclick="openEmailForCommune(${c.id})">✉</button>
+        <a href="https://${GITHUB}.github.io/${esc(c.slug)}/" target="_blank" style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:6px;border:1px solid rgba(79,195,161,.25);color:var(--acc);font-size:11px;text-decoration:none;">↗</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  USERS
+// ══════════════════════════════════════════════
+async function loadUsers(){
+  await fetchBaseData();
+  const cf=document.getElementById('uf-commune').value;
+  const rf=document.getElementById('uf-role').value;
+  const sel=document.getElementById('uf-commune');
+  if(sel.options.length<=1){ C.communes.forEach(c=>{ const o=document.createElement('option'); o.value=c.id; o.textContent=c.nom; sel.appendChild(o); }); }
+  let users=C.profiles;
+  if(cf) users=users.filter(u=>String(u.commune_id)===cf);
+  if(rf) users=users.filter(u=>u.role===rf);
+  const comMap={}; C.communes.forEach(c=>{ comMap[c.id]=c.nom; });
+  document.getElementById('users-table').innerHTML = users.length
+    ? users.map(u=>`<tr>
+        <td><div class="td-main">${esc(u.nom||u.pseudo||'—')}</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--txt3);">@${esc(u.pseudo||'—')}</div></td>
+        <td>${esc(comMap[u.commune_id]||'—')}</td>
+        <td>${roleBadge(u.role)}</td>
+        <td>${u.xp||0} XP</td>
+        <td style="font-family:'DM Mono',monospace;font-size:10px;">${fmtDate(u.created_at)}</td>
+        <td><button class="btn btn-xs" onclick="changeUserRole('${u.id}','${esc(u.nom||u.pseudo)}','${u.role}')">Rôle</button></td>
+      </tr>`).join('')
+    : `<tr><td colspan="6"><div class="empty">Aucun utilisateur</div></td></tr>`;
+}
+
+async function changeUserRole(id, nom, currentRole) {
+  const roles = ['user','admin','super_admin'];
+  const next = roles[(roles.indexOf(currentRole)+1)%roles.length];
+  if(!confirm(`Changer le rôle de ${nom} → ${next} ?`)) return;
+  const {error} = await sb.from('profiles').update({role:next}).eq('id',id);
+  if(error) return toast('❌ '+error.message);
+  addLog('◎',`Rôle modifié : ${nom}`,`→ ${next}`);
+  toast(`✓ ${nom} → ${next}`);
+  C.lastFetch=null; await fetchBaseData(); loadUsers();
+}
+
+// ══════════════════════════════════════════════
+//  BILLING
+// ══════════════════════════════════════════════
+async function loadBilling(){
+  await fetchBaseData();
+  const {arr,mrr}=calcMRR();
+  const payantes=C.communes.filter(c=>c.actif&&PLAN_PRICE[c.plan]>0);
+
+  document.getElementById('billing-stats').innerHTML=`
+    <div class="stat-card s-green"><div class="stat-label">ARR total</div><div class="stat-val">${formatEur(arr)}</div><div class="stat-sub">revenus annuels</div></div>
+    <div class="stat-card s-acc"><div class="stat-label">MRR</div><div class="stat-val">${formatEur(mrr)}</div><div class="stat-sub">mensuel équivalent</div></div>
+    <div class="stat-card s-stripe"><div class="stat-label">Communes payantes</div><div class="stat-val">${payantes.length}</div><div class="stat-sub">sur ${C.communes.filter(c=>c.actif).length} actives</div></div>
+    <div class="stat-card s-purple"><div class="stat-label">Revenu moyen</div><div class="stat-val">${payantes.length?formatEur(Math.round(arr/payantes.length)):'—'}</div><div class="stat-sub">/commune/an</div></div>
+  `;
+
+  // Barre MRR
+  const byPlan={}; payantes.forEach(c=>{ byPlan[c.plan]=(byPlan[c.plan]||0)+(PLAN_PRICE[c.plan]||0); });
+  const planCols={hameau:'var(--txt2)',village:'var(--acc)',bourg:'var(--purple)',ville:'var(--info)',free:'var(--txt3)'};
+  const totalA=Object.values(byPlan).reduce((a,b)=>a+b,0)||1;
+  document.getElementById('mrr-breakdown').innerHTML=Object.keys(byPlan).length?`
+    <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:10px;">Répartition ARR par plan</div>
+    <div class="mrr-bar-wrap">${Object.entries(byPlan).map(([p,v])=>`<div class="mrr-seg" style="width:${Math.round((v/totalA)*100)}%;background:${planCols[p]||'var(--acc)'}" title="${PLAN_LABEL[p]}: ${formatEur(v)}"></div>`).join('')}</div>
+    <div class="mrr-legend">${Object.entries(byPlan).map(([p,v])=>`<div class="mrr-leg-item"><div class="mrr-leg-dot" style="background:${planCols[p]||'var(--acc)'}"></div>${PLAN_LABEL[p]} — <strong style="color:var(--txt)">${formatEur(v)}/an</strong></div>`).join('')}</div>
+  `:'';
+
+  document.getElementById('billing-table').innerHTML=C.communes.map(c=>{
+    const rev=PLAN_PRICE[c.plan]||0;
+    const days=daysUntilRenewal(c);
+    const sc=stripeCustomerForCommune(c);
+    return `<tr>
+      <td><div class="td-main">${esc(c.nom)}</div></td>
+      <td>${planBadge(c.plan)}</td>
+      <td style="color:${rev>0?'var(--acc)':'var(--txt3)'};">${rev>0?formatEur(rev)+'/an':'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;">${c.date_debut_abo?fmtDate(c.date_debut_abo):'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;">${renewalDate(c)?fmtDate(renewalDate(c).toISOString()):'—'}</td>
+      <td>${renewalBadge(days)}</td>
+      <td>${sc?`<span class="badge badge-stripe" style="font-size:8px;" title="${esc(sc.id)}">✓ ${esc(sc.name||'lié')}</span>`:'<span style="color:var(--txt3);font-size:10px;">—</span>'}</td>
+      <td>
+        <select onchange="updatePlan(${c.id},this.value)" style="background:var(--bg3);border:1px solid var(--line2);border-radius:5px;padding:4px 8px;color:var(--txt);font-size:11px;outline:none;">
+          ${['hameau','village','bourg','ville','free'].map(p=>`<option value="${p}"${c.plan===p?' selected':''}>${PLAN_LABEL[p]}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+}
+async function updatePlan(id,plan){
+  const {error}=await sb.from('communes').update({plan}).eq('id',id);
+  if(error) return toast('❌ '+error.message);
+  C.communes=C.communes.map(c=>c.id===id?{...c,plan}:c);
+  addLog('◇',`Plan modifié`,`→ ${plan}`);
+  toast('✓ Plan → '+plan);
+}
+
+// ══════════════════════════════════════════════
+//  PAGE STRIPE
+// ══════════════════════════════════════════════
+async function loadStripePage(){
+  await fetchBaseData();
+  document.getElementById('stripe-invoices').innerHTML=`<tr><td colspan="5"><div class="loading"><div class="spin"></div> Chargement Stripe…</div></td></tr>`;
+  document.getElementById('stripe-customers').innerHTML=`<tr><td colspan="4"><div class="loading"><div class="spin"></div></div></td></tr>`;
+
+  await fetchStripeData();
+
+  // Stats Stripe
+  const paid=C.stripeInvoices.filter(i=>i.status==='paid');
+  const open=C.stripeInvoices.filter(i=>i.status==='open');
+  const totalPaid=paid.reduce((s,i)=>s+(i.amount_paid||0),0)/100;
+  document.getElementById('stripe-stats').innerHTML=`
+    <div class="stat-card s-stripe"><div class="stat-label">Clients Stripe</div><div class="stat-val">${C.stripeCustomers.length}</div><div class="stat-sub">dans ton compte</div></div>
+    <div class="stat-card s-green"><div class="stat-label">Factures payées</div><div class="stat-val">${paid.length}</div><div class="stat-sub">${formatEur(totalPaid)} encaissé</div></div>
+    <div class="stat-card s-warn"><div class="stat-label">En attente</div><div class="stat-val">${open.length}</div><div class="stat-sub">factures ouvertes</div></div>
+    <div class="stat-card s-acc"><div class="stat-label">Total factures</div><div class="stat-val">${C.stripeInvoices.length}</div><div class="stat-sub">toutes périodes</div></div>
+  `;
+
+  // Table factures
+  if(!C.stripeInvoices.length){
+    document.getElementById('stripe-invoices').innerHTML=`<tr><td colspan="5"><div class="empty"><div class="empty-ico">💳</div>Aucune facture</div></td></tr>`;
+  } else {
+    document.getElementById('stripe-invoices').innerHTML=C.stripeInvoices.map(inv=>`<tr>
+      <td><div class="td-main">${esc(inv.customer_name||inv.customer_email||inv.customer||'—')}</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--txt3);">${esc(inv.customer_email||'')}</div></td>
+      <td class="td-main" style="color:var(--acc);">${formatEur((inv.amount_due||0)/100)}</td>
+      <td><span class="badge ${inv.status==='paid'?'badge-green':inv.status==='open'?'badge-warn':inv.status==='draft'?'badge-gray':'badge-danger'}">${inv.status}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;">${inv.created?fmtDate(new Date(inv.created*1000).toISOString()):'—'}</td>
+      <td><div class="td-actions">
+        ${inv.status==='draft'?`<button class="btn btn-xs btn-stripe" onclick="finalizeInvoice('${inv.id}')">Finaliser & envoyer</button>`:''}
+        <button class="btn btn-xs btn-gmail" onclick="openEmailForInvoice('${esc(inv.customer_email||'')}','${formatEur((inv.amount_due||0)/100)}')">✉ Relancer</button>
+      </div></td>
+    </tr>`).join('');
+  }
+
+  // Table clients
+  const comMap={}; C.communes.forEach(c=>{ comMap[c.owner_email]=c.nom; if(c.stripe_customer_id) comMap[c.stripe_customer_id]=c.nom; });
+  document.getElementById('stripe-customers').innerHTML=C.stripeCustomers.length
+    ? C.stripeCustomers.map(sc=>`<tr>
+        <td class="td-main">${esc(sc.name||'—')}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:10px;">${esc(sc.email||'—')}</td>
+        <td>${esc(comMap[sc.email]||comMap[sc.id]||'—')}</td>
+        <td><div class="td-actions">
+          <button class="btn btn-xs btn-stripe" onclick="openCreateInvoiceForCustomer('${sc.id}','${esc(sc.name||sc.email||'')}')">💳 Facture</button>
+          <button class="btn btn-xs btn-gmail" onclick="prefillEmailTo('${esc(sc.email||'')}')">✉ Email</button>
+        </div></td>
+      </tr>`).join('')
+    : `<tr><td colspan="4"><div class="empty">Aucun client Stripe</div></td></tr>`;
+
+  // Alimenter le select du modal créer facture
+  const custSel=document.getElementById('inv-customer');
+  custSel.innerHTML='<option value="">— Choisir un client —</option>'+C.stripeCustomers.map(sc=>`<option value="${sc.id}">${esc(sc.name||sc.email||sc.id)}</option>`).join('');
+  const ccSel=document.getElementById('cust-commune');
+  ccSel.innerHTML='<option value="">— Optionnel —</option>'+C.communes.map(c=>`<option value="${c.id}">${esc(c.nom)}</option>`).join('');
+}
+
+// ══════════════════════════════════════════════
+//  ACTIONS STRIPE
+// ══════════════════════════════════════════════
+function openCreateInvoiceModal(){
+  document.getElementById('inv-amount').value='';
+  document.getElementById('inv-days').value='30';
+  document.getElementById('inv-desc').value='Abonnement Plateforme Citoyenne 2025';
+  document.getElementById('modal-create-invoice').classList.add('open');
+}
+function openCreateInvoiceForCommune(communeId){
+  const c=C.communes.find(x=>x.id===communeId);
+  if(!c) return;
+  const sc=stripeCustomerForCommune(c);
+  if(!sc){ toast('⚠ Aucun client Stripe lié à cette commune. Crée-le d\'abord dans Stripe.'); return; }
+  document.getElementById('inv-customer').value=sc.id;
+  document.getElementById('inv-amount').value=PLAN_PRICE[c.plan]||0;
+  document.getElementById('inv-days').value='30';
+  document.getElementById('inv-desc').value=`Abonnement Plateforme Citoyenne — ${PLAN_LABEL[c.plan]} ${new Date().getFullYear()}`;
+  document.getElementById('modal-create-invoice').classList.add('open');
+}
+function openCreateInvoiceForCustomer(custId, name){
+  document.getElementById('inv-customer').value=custId;
+  document.getElementById('inv-amount').value='';
+  document.getElementById('inv-days').value='30';
+  document.getElementById('inv-desc').value=`Abonnement Plateforme Citoyenne — ${name}`;
+  document.getElementById('modal-create-invoice').classList.add('open');
+}
+
+async function createStripeInvoice(){
+  const custId = document.getElementById('inv-customer').value;
+  const amount  = parseFloat(document.getElementById('inv-amount').value);
+  const days    = parseInt(document.getElementById('inv-days').value)||30;
+  const desc    = document.getElementById('inv-desc').value.trim();
+  if(!custId) return toast('⚠ Choisir un client Stripe');
+  if(!amount||amount<=0) return toast('⚠ Montant invalide');
+  const btn=document.getElementById('btn-create-invoice');
+  btn.disabled=true; btn.textContent='Création…';
+
+  // Appel via Claude+MCP Stripe
+  const result = await callClaudeWithMCP(
+    `Crée une facture Stripe pour le client "${custId}" avec les paramètres suivants:
+    - Montant: ${Math.round(amount*100)} centimes (${amount}€)
+    - Délai de paiement: ${days} jours
+    - Description de la ligne: "${desc}"
+    Étapes: 1) Crée la facture avec create_invoice (customer="${custId}", days_until_due=${days})
+    2) Ajoute une ligne avec create_invoice_item (montant=${Math.round(amount*100)}, description="${desc}")
+    3) Finalise avec finalize_invoice pour l'envoyer au client
+    Retourne: {"success":true,"invoice_id":"...","status":"..."}`,
+    [{ type:'url', url:'https://mcp.stripe.com', name:'stripe' }]
+  );
+
+  btn.disabled=false; btn.textContent='Créer & envoyer la facture';
+  if(result?.success){
+    addLog('💳',`Facture créée : ${formatEur(amount)}`,`client ${custId}`);
+    toast(`✓ Facture de ${formatEur(amount)} créée et envoyée !`);
+    closeModal(); C.lastStripeFetch=null; loadStripePage();
+  } else {
+    toast('❌ Erreur Stripe — vérifie la console');
+    console.error('Stripe result:', result);
+  }
+}
+
+async function finalizeInvoice(invoiceId){
+  if(!confirm('Finaliser et envoyer cette facture ?')) return;
+  const result = await callClaudeWithMCP(
+    `Finalise la facture Stripe "${invoiceId}" avec finalize_invoice. Retourne {"success":true,"status":"..."}`,
+    [{ type:'url', url:'https://mcp.stripe.com', name:'stripe' }]
+  );
+  if(result?.success){ toast('✓ Facture finalisée et envoyée !'); C.lastStripeFetch=null; loadStripePage(); }
+  else toast('❌ Erreur finalisation');
+}
+
+function openCreateCustomerModal(){
+  document.getElementById('cust-name').value='';
+  document.getElementById('cust-email').value='';
+  document.getElementById('cust-commune').value='';
+  document.getElementById('modal-create-customer').classList.add('open');
+}
+
+async function createStripeCustomer(){
+  const name=document.getElementById('cust-name').value.trim();
+  const email=document.getElementById('cust-email').value.trim();
+  const communeId=document.getElementById('cust-commune').value;
+  if(!name) return toast('⚠ Nom obligatoire');
+  const btn=document.getElementById('btn-create-customer');
+  btn.disabled=true; btn.textContent='Création…';
+
+  const result = await callClaudeWithMCP(
+    `Crée un client Stripe avec name="${name}"${email?`, email="${email}"`:''}. Retourne {"success":true,"customer_id":"...","name":"...","email":"..."}`,
+    [{ type:'url', url:'https://mcp.stripe.com', name:'stripe' }]
+  );
+
+  btn.disabled=false; btn.textContent='Créer le client';
+  if(result?.success){
+    // Lier à la commune Supabase si sélectionnée
+    if(communeId && result.customer_id){
+      await sb.from('communes').update({stripe_customer_id:result.customer_id}).eq('id',communeId);
+      C.lastFetch=null;
+    }
+    addLog('💳',`Client Stripe créé : ${name}`,email);
+    toast(`✓ Client "${name}" créé dans Stripe !`);
+    closeModal(); C.lastStripeFetch=null; loadStripePage();
+  } else {
+    toast('❌ Erreur création client Stripe');
+    console.error('Stripe create customer:', result);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  PAGE EMAILS (Gmail)
+// ══════════════════════════════════════════════
+const EMAIL_TEMPLATES = {
+  bienvenue: {
+    subject: 'Bienvenue sur la Plateforme Citoyenne — {commune}',
+    body: `Bonjour,
+
+Bienvenue sur la Plateforme Citoyenne de {commune} !
+
+Votre espace est maintenant actif. Vous pouvez y accéder à l'adresse suivante :
+https://juicyagencyformation-collab.github.io/{slug}/
+
+La plateforme vous permet de :
+→ Publier des annonces et actualités pour vos citoyens
+→ Gérer les signalements de la commune
+→ Animer votre communauté locale
+
+Pour toute question, je suis disponible à cette adresse.
+
+Bien cordialement,
+Leandre — Juicy Solutions`
+  },
+  facture: {
+    subject: 'Facture Plateforme Citoyenne — {commune}',
+    body: `Bonjour,
+
+Veuillez trouver ci-joint votre facture pour l'abonnement à la Plateforme Citoyenne.
+
+Plan souscrit : {plan}
+Montant : {montant} € / an
+Règlement par virement bancaire dans un délai de 30 jours.
+
+RIB disponible sur demande.
+
+Merci pour votre confiance,
+Leandre — Juicy Solutions`
+  },
+  relance: {
+    subject: 'Renouvellement abonnement — {commune}',
+    body: `Bonjour,
+
+Votre abonnement à la Plateforme Citoyenne de {commune} arrive à échéance prochainement.
+
+Pour assurer la continuité du service et conserver toutes vos données, je vous invite à renouveler votre abonnement.
+
+Je reste disponible pour tout ajustement ou question.
+
+Bien cordialement,
+Leandre — Juicy Solutions`
+  },
+  onboarding: {
+    subject: 'Accès administrateur — Plateforme Citoyenne {commune}',
+    body: `Bonjour,
+
+Votre accès administrateur à la Plateforme Citoyenne de {commune} est prêt.
+
+Connectez-vous ici :
+https://juicyagencyformation-collab.github.io/{slug}/
+
+Identifiant : {email}
+Mot de passe provisoire : à définir à la première connexion
+
+N'hésitez pas à me contacter pour la prise en main.
+
+Bien cordialement,
+Leandre — Juicy Solutions`
+  },
+  custom: { subject: '', body: '' }
+};
+
+async function loadEmailsPage(){
+  await fetchBaseData();
+  // Alimenter le select communes
+  const sel=document.getElementById('email-commune-sel');
+  if(sel.options.length<=1){
+    sel.innerHTML='<option value="">— Choisir une commune —</option>'+C.communes.map(c=>`<option value="${c.id}">${esc(c.nom)}</option>`).join('');
+  }
+  setTemplate('bienvenue', document.querySelector('.t-tab.active'));
+  await loadDrafts();
+}
+
+function setTemplate(key, btn){
+  document.querySelectorAll('.t-tab').forEach(t=>t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const tpl=EMAIL_TEMPLATES[key]||{subject:'',body:''};
+  // Appliquer commune sélectionnée si disponible
+  const communeId=document.getElementById('email-commune-sel').value;
+  const c=C.communes.find(x=>String(x.id)===communeId);
+  const nom=c?.nom||'{commune}';
+  const slug=c?.slug||'{slug}';
+  const plan=PLAN_LABEL[c?.plan]||'{plan}';
+  const montant=PLAN_PRICE[c?.plan]||'{montant}';
+  const email=c?.owner_email||'{email}';
+  const replace=s=>s.replace(/\{commune\}/g,nom).replace(/\{slug\}/g,slug).replace(/\{plan\}/g,plan).replace(/\{montant\}/g,String(montant)).replace(/\{email\}/g,email);
+  document.getElementById('email-subject').value=replace(tpl.subject);
+  document.getElementById('email-body').value=replace(tpl.body);
+}
+
+function prefillEmailRecipient(){
+  const id=document.getElementById('email-commune-sel').value;
+  const c=C.communes.find(x=>String(x.id)===id);
+  if(c?.owner_email) document.getElementById('email-to').value=c.owner_email;
+  // Réappliquer le template actif avec les nouvelles variables
+  const activeTab=document.querySelector('.t-tab.active');
+  if(activeTab){
+    const key=['bienvenue','facture','relance','onboarding','custom'].find(k=>activeTab.textContent.toLowerCase().includes(k.slice(0,5)))||'bienvenue';
+    setTemplate(key, activeTab);
+  }
+}
+
+function prefillEmailTo(email){
+  document.getElementById('email-to').value=email;
+  goPage('emails');
+}
+
+function openEmailForCommune(communeId){
+  const c=C.communes.find(x=>x.id===communeId);
+  if(!c) return;
+  goPage('emails');
+  setTimeout(()=>{
+    document.getElementById('email-commune-sel').value=communeId;
+    document.getElementById('email-to').value=c.owner_email||'';
+    prefillEmailRecipient();
+  },100);
+}
+
+function openEmailForInvoice(email, montant){
+  goPage('emails');
+  setTimeout(()=>{
+    document.getElementById('email-to').value=email;
+    document.getElementById('email-subject').value='Rappel facture — Plateforme Citoyenne';
+    document.getElementById('email-body').value=`Bonjour,\n\nJe me permets de vous relancer concernant la facture de ${montant} toujours en attente de règlement.\n\nMerci de bien vouloir procéder au paiement dans les plus brefs délais.\n\nCordialement,\nLeandre — Juicy Solutions`;
+  },100);
+}
+
+function prefillRenewalEmail(nom, email, days){
+  goPage('emails');
+  setTimeout(()=>{
+    document.getElementById('email-to').value=email;
+    const activeTab=document.querySelectorAll('.t-tab')[2]; // relance
+    if(activeTab){ document.querySelectorAll('.t-tab').forEach(t=>t.classList.remove('active')); activeTab.classList.add('active'); }
+    document.getElementById('email-subject').value=`Renouvellement abonnement — ${nom}`;
+    document.getElementById('email-body').value=`Bonjour,\n\nVotre abonnement à la Plateforme Citoyenne de ${nom} arrive à échéance dans ${days<0?'— déjà expiré':days+' jours'}.\n\nPour assurer la continuité du service, je vous invite à renouveler votre abonnement.\n\nBien cordialement,\nLeandre — Juicy Solutions`;
+  },100);
+}
+
+async function createEmailDraft(){
+  const to=document.getElementById('email-to').value.trim();
+  const subject=document.getElementById('email-subject').value.trim();
+  const body=document.getElementById('email-body').value.trim();
+  if(!to) return toast('⚠ Email destinataire obligatoire');
+  if(!subject) return toast('⚠ Objet obligatoire');
+  const btn=document.getElementById('btn-send-draft');
+  btn.disabled=true; btn.textContent='Création brouillon…';
+
+  // Appel via Claude+MCP Gmail
+  const result = await callClaudeWithMCP(
+    `Crée un brouillon Gmail avec: to=["${to}"], subject="${subject.replace(/"/g,"'")}", body="${body.replace(/\n/g,'\\n').replace(/"/g,"'")}". Retourne {"success":true,"draft_id":"..."}`,
+    [{ type:'url', url:'https://gmailmcp.googleapis.com/mcp/v1', name:'gmail' }]
+  );
+
+  btn.disabled=false; btn.textContent='✉ Créer le brouillon Gmail';
+  if(result?.success||result?.draft_id){
+    addLog('✉',`Brouillon créé → ${to}`,subject);
+    toast('✓ Brouillon créé dans Gmail ! Ouvre Gmail pour l\'envoyer.');
+    await loadDrafts();
+  } else {
+    // Fallback : ouvrir Gmail mailto
+    const mailtoLink=`https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailtoLink,'_blank');
+    toast('✓ Ouvert dans Gmail (nouvelle fenêtre)');
+  }
+}
+
+async function loadDrafts(){
+  document.getElementById('drafts-table').innerHTML=`<tr><td colspan="4"><div class="loading"><div class="spin"></div> Chargement…</div></td></tr>`;
+  const result = await callClaudeWithMCP(
+    'Liste les 10 derniers brouillons Gmail. Retourne {"drafts":[{"id":"...","subject":"...","to":"...","date":"..."}]}',
+    [{ type:'url', url:'https://gmailmcp.googleapis.com/mcp/v1', name:'gmail' }]
+  );
+  const drafts=result?.drafts||[];
+  document.getElementById('drafts-table').innerHTML = drafts.length
+    ? drafts.map(d=>`<tr>
+        <td class="td-main">${esc(d.subject||'(Sans objet)')}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:10px;">${esc(d.to||'—')}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:10px;">${esc(d.date||'—')}</td>
+        <td><a href="https://mail.google.com/mail/#drafts/${d.id}" target="_blank" class="btn btn-xs btn-gmail">Ouvrir</a></td>
+      </tr>`).join('')
+    : `<tr><td colspan="4"><div class="empty">Aucun brouillon récent</div></td></tr>`;
+}
+
+// ══════════════════════════════════════════════
+//  CRUD COMMUNES
+// ══════════════════════════════════════════════
+function openModalCommune(){
+  ['m-nom','m-slug','m-dept','m-email','m-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-color').value='#2C5F6E';
+  document.getElementById('m-plan').value='hameau';
+  document.getElementById('m-pipeline').value='prospect';
+  document.getElementById('m-start').value=new Date().toISOString().slice(0,10);
+  document.getElementById('modal-commune').classList.add('open');
+}
+document.getElementById('m-nom').addEventListener('input',function(){
+  document.getElementById('m-slug').value=this.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+});
+
+async function createCommune(){
+  const nom=document.getElementById('m-nom').value.trim();
+  const slug=document.getElementById('m-slug').value.trim().toLowerCase();
+  const email=document.getElementById('m-email').value.trim();
+  if(!nom||!slug) return toast('⚠ Nom et slug obligatoires');
+  const btn=document.getElementById('btn-create-commune');
+  btn.disabled=true; btn.textContent='Création…';
+
+  // Créer dans Supabase
+  const {error}=await sb.from('communes').insert({
+    nom,slug,
+    departement:document.getElementById('m-dept').value.trim()||null,
+    owner_email:email||null,
+    plan:document.getElementById('m-plan').value,
+    pipeline_status:document.getElementById('m-pipeline').value,
+    couleur_theme:document.getElementById('m-color').value||'#2C5F6E',
+    date_debut_abo:document.getElementById('m-start').value||null,
+    notes:document.getElementById('m-notes').value.trim()||null,
+  });
+
+  if(error){ btn.disabled=false; btn.textContent='Créer la commune'; return toast('❌ '+error.message); }
+
+  btn.disabled=false; btn.textContent='Créer la commune';
+  addLog('⬡',`Commune créée : ${nom}`,slug);
+  toast(`✓ "${nom}" créée !`);
+  closeModal(); C.lastFetch=null; C.lastStripeFetch=null;
+  await fetchBaseData(); loadCommunes(); loadOverview();
+}
+
+function openEditCommune(id){
+  const c=C.communes.find(x=>x.id===id); if(!c) return;
+  document.getElementById('edit-commune-id').value=id;
+  document.getElementById('edit-commune-sub').textContent=c.nom+' · '+c.slug;
+  document.getElementById('edit-plan').value=c.plan||'hameau';
+  document.getElementById('edit-pipeline').value=c.pipeline_status||'prospect';
+  document.getElementById('edit-actif').value=String(c.actif!==false);
+  document.getElementById('edit-email').value=c.owner_email||'';
+  document.getElementById('edit-start').value=c.date_debut_abo?c.date_debut_abo.slice(0,10):'';
+  document.getElementById('edit-stripe-id').value=c.stripe_customer_id||'';
+  document.getElementById('edit-notes').value=c.notes||'';
+  document.getElementById('modal-edit-commune').classList.add('open');
+}
+async function saveCommune(){
+  const id=parseInt(document.getElementById('edit-commune-id').value);
+  const btn=document.getElementById('btn-save-commune');
+  btn.disabled=true; btn.textContent='Sauvegarde…';
+  const {error}=await sb.from('communes').update({
+    plan:document.getElementById('edit-plan').value,
+    actif:document.getElementById('edit-actif').value==='true',
+    pipeline_status:document.getElementById('edit-pipeline').value,
+    owner_email:document.getElementById('edit-email').value.trim()||null,
+    date_debut_abo:document.getElementById('edit-start').value||null,
+    stripe_customer_id:document.getElementById('edit-stripe-id').value.trim()||null,
+    notes:document.getElementById('edit-notes').value.trim()||null,
+  }).eq('id',id);
+  btn.disabled=false; btn.textContent='Enregistrer';
+  if(error) return toast('❌ '+error.message);
+  addLog('✏','Commune modifiée',String(id));
+  toast('✓ Commune mise à jour');
+  closeModal(); C.lastFetch=null; await fetchBaseData(); loadCommunes();
+}
+
+// ══════════════════════════════════════════════
+//  LIER STRIPE MANUELLEMENT
+// ══════════════════════════════════════════════
+function openLinkStripeModal(communeId, nom){
+  document.getElementById('link-stripe-commune-id').value = communeId;
+  document.getElementById('link-stripe-sub').textContent = 'Commune · ' + nom;
+  document.getElementById('link-stripe-id').value = '';
+  document.getElementById('modal-link-stripe').classList.add('open');
+}
+
+async function saveLinkStripe(){
+  const communeId = parseInt(document.getElementById('link-stripe-commune-id').value);
+  const stripeId  = document.getElementById('link-stripe-id').value.trim();
+  if(!stripeId) return toast('⚠ Colle l\'ID Stripe avant de valider');
+  if(!stripeId.startsWith('cus_')) return toast('❌ L\'ID doit commencer par cus_');
+  const btn = document.getElementById('btn-link-stripe');
+  btn.disabled = true; btn.textContent = 'Liaison…';
+  const {error} = await sb.from('communes').update({stripe_customer_id: stripeId}).eq('id', communeId);
+  btn.disabled = false; btn.textContent = 'Lier ce client';
+  if(error) return toast('❌ ' + error.message);
+  const commune = C.communes.find(c => c.id === communeId);
+  addLog('💳', 'Stripe lié : ' + (commune?.nom || communeId), stripeId);
+  toast('✓ Client Stripe lié avec succès !');
+  closeModal();
+  C.lastFetch = null; // forcer un vrai refetch Supabase
+  await fetchBaseData();
+  loadCommunes();
+  loadOverview();
+}
+
+// ══════════════════════════════════════════════
+//  EXPORT CSV
+// ══════════════════════════════════════════════
+function exportCSV(){
+  const hdrs=['Nom','Slug','Plan','Pipeline','ARR (€)','Membres','Renouvellement','Owner','Stripe ID'];
+  const rows=C.communes.map(c=>[
+    c.nom,c.slug,c.plan,c.pipeline_status||'prospect',
+    PLAN_PRICE[c.plan]||0,C.profilesByCommune[c.id]||0,
+    renewalDate(c)?fmtDate(renewalDate(c).toISOString()):'',
+    c.owner_email||'',c.stripe_customer_id||'',
+  ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv=[hdrs.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`communes-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  addLog('↓','Export CSV'); toast('✓ CSV exporté');
+}
+
+// ══════════════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════════════
+function closeModal(){ document.querySelectorAll('.modal-bg').forEach(m=>m.classList.remove('open')); }
+document.querySelectorAll('.modal-bg').forEach(m=>{ m.addEventListener('click',e=>{ if(e.target===m) closeModal(); }); });
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d){ if(!d) return '—'; return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}); }
+function formatEur(n){ return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n); }
+function planBadge(p){ return `<span class="badge ${PLAN_COLORS[p]||'badge-gray'}">${PLAN_LABEL[p]||p}</span>`; }
+function roleBadge(r){ if(r==='super_admin') return '<span class="badge badge-purple">super_admin</span>'; if(r==='admin') return '<span class="badge badge-info">admin</span>'; return '<span class="badge badge-gray">user</span>'; }
+let _t; function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(_t); _t=setTimeout(()=>t.classList.remove('show'),3200); }
+
+// ══════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════
+(async()=>{
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){ document.getElementById('auth-wrap').style.display='none'; await initApp(session); }
+  sb.auth.onAuthStateChange(async(_e,session)=>{
+    if(!session){ document.getElementById('app').style.display='none'; document.getElementById('auth-wrap').style.display='flex'; }
+  });
+})();
+</script>
+</body>
+</html>
