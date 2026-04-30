@@ -948,7 +948,10 @@ function renderCommuneCards(communes){
       <div style="display:flex;gap:5px;margin-top:12px;flex-wrap:wrap;">
         <button class="btn btn-sm" onclick="openEditCommune(${c.id})">Modifier</button>
         <button class="btn btn-sm btn-stripe" onclick="openCreateInvoiceForCommune(${c.id})">💳</button>
-        <button class="btn btn-sm btn-gmail" onclick="openEmailForCommune(${c.id})">✉</button>
+        ${!c.stripe_customer_id
+  ? `<button class="btn btn-sm btn-stripe" onclick="createStripeCustomer(${c.id},'${esc(c.nom)}','${esc(c.owner_email||'')}')">💳 Lier Stripe</button>`
+  : `<button class="btn btn-sm btn-stripe" onclick="openCreateInvoiceForCommune(${c.id})">💳 Facture</button>`
+}
         <a href="https://${GITHUB}.github.io/${esc(c.slug)}/" target="_blank" style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:6px;border:1px solid rgba(79,195,161,.25);color:var(--acc);font-size:11px;text-decoration:none;">↗</a>
       </div>
     </div>`;
