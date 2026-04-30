@@ -1439,60 +1439,7 @@ async function createCommune(){
 
   if(error){ btn.disabled=false; btn.textContent='Créer la commune'; return toast('❌ '+error.message); }
 
-  // Créer client Stripe automatiquement si email fourni
-  if(email){
-    toast('⏳ Création client Stripe…');
-    const stripeResult = await callClaudeWithMCP(
-      `Crée un client Stripe: name="Mairie de ${nom}", email="${email}". Retourne {"success":true,"customer_id":"..."}`,
-      [{ type:'url', url:'https://mcp.stripe.com', name:'stripe' }]
-    );
-    if(stripeResult?.customer_id){
-      // Lier l'ID Stripe à la commune
-      const {data:newC}=await sb.from('communes').select('id').eq('slug',slug).single();
-      if(newC) await sb.from('communes').update({stripe_customer_id:stripeResult.customer_id}).eq('id',newC.id);
-      addLog('💳',`Client Stripe auto-créé : Mairie de ${nom}`,email);
-    }
-  }
-
-  btn.disabled=false; btn.textContent='Créer la commune';
-  addLog('⬡',`Commune créée : ${nom}`,slug);
-  toast(`✓ "${nom}" créée !`);
-  closeModal(); C.lastFetch=null; C.lastStripeFetch=null;
-  await fetchBaseData(); loadCommunes(); loadOverview();
-}
-
-function openEditCommune(id){
-  const c=C.communes.find(x=>x.id===id); if(!c) return;
-  document.getElementById('edit-commune-id').value=id;
-  document.getElementById('edit-commune-sub').textContent=c.nom+' · '+c.slug;
-  document.getElementById('edit-plan').value=c.plan||'hameau';
-  document.getElementById('edit-pipeline').value=c.pipeline_status||'prospect';
-  document.getElementById('edit-actif').value=String(c.actif!==false);
-  document.getElementById('edit-email').value=c.owner_email||'';
-  document.getElementById('edit-start').value=c.date_debut_abo?c.date_debut_abo.slice(0,10):'';
-  document.getElementById('edit-stripe-id').value=c.stripe_customer_id||'';
-  document.getElementById('edit-notes').value=c.notes||'';
-  document.getElementById('modal-edit-commune').classList.add('open');
-}
-async function saveCommune(){
-  const id=parseInt(document.getElementById('edit-commune-id').value);
-  const btn=document.getElementById('btn-save-commune');
-  btn.disabled=true; btn.textContent='Sauvegarde…';
-  const {error}=await sb.from('communes').update({
-    plan:document.getElementById('edit-plan').value,
-    actif:document.getElementById('edit-actif').value==='true',
-    pipeline_status:document.getElementById('edit-pipeline').value,
-    owner_email:document.getElementById('edit-email').value.trim()||null,
-    date_debut_abo:document.getElementById('edit-start').value||null,
-    stripe_customer_id:document.getElementById('edit-stripe-id').value.trim()||null,
-    notes:document.getElementById('edit-notes').value.trim()||null,
-  }).eq('id',id);
-  btn.disabled=false; btn.textContent='Enregistrer';
-  if(error) return toast('❌ '+error.message);
-  addLog('✏','Commune modifiée',String(id));
-  toast('✓ Commune mise à jour');
-  closeModal(); C.lastFetch=null; await fetchBaseData(); loadCommunes();
-}
+// Création client Stripe à faire manuellement depuis l'onglet Stripe
 
 // ══════════════════════════════════════════════
 //  EXPORT CSV
